@@ -2,8 +2,7 @@ class TuringMachine:
     def __init__(self, num1, num2):
         self.num1 = num1
         self.num2 = num2
-        # Zorunlu girdi formatı: BirinciSayı*İkinciSayı=
-        # Sonuç alanı başlangıçta boştur, işlemlerle doldurulacaktır.
+        
         self.tape = list(f"{num1}*{num2}=") + ["_"] * 40
         self.head = 0
         self.current_state = "q_start"
@@ -12,11 +11,8 @@ class TuringMachine:
         self._build_transition_table()
 
     def _build_transition_table(self):
-        """
-        Kaydır ve Topla (Shift & Add) algoritmasının tek bantlı Turing Makinesi kuralları.
-        Format: (Mevcut_Durum, Okunan): (Yeni_Durum, Yazılan, Yön)
-        """
-        # --- FAZ 1: Sağ Sınıra Git ve Ayrıştırma Kontrolü ---
+        
+  
         self.transitions[("q_start", "0")] = ("q_start", "0", "R")
         self.transitions[("q_start", "1")] = ("q_start", "1", "R")
         self.transitions[("q_start", "*")] = ("q_scan_b", "*", "R")
@@ -25,19 +21,17 @@ class TuringMachine:
         self.transitions[("q_scan_b", "1")] = ("q_scan_b", "1", "R")
         self.transitions[("q_scan_b", "=")] = ("q_find_b_bit", "=", "L")
 
-        # --- FAZ 2: İkinci Sayının (B) En Sağdaki İşlenmemiş Bitini Bulma ---
         self.transitions[("q_find_b_bit", "x")] = ("q_find_b_bit", "x", "L")
         self.transitions[("q_find_b_bit", "y")] = ("q_find_b_bit", "y", "L")
         
-        # Bit '0' ise: Sadece kaydırma etkisi yaratmak için işaretle ve sola kaydır
+    
         self.transitions[("q_find_b_bit", "0")] = ("q_mark_0", "x", "R")
-        # Bit '1' ise: Birinci sayıyı kopyalayıp eklemek üzere git
+       
         self.transitions[("q_find_b_bit", "1")] = ("q_mark_1", "y", "R")
         
-        # Tüm bitler bittiyse '*' işaretine gelinir -> Temizlik aşamasına geç
         self.transitions[("q_find_b_bit", "*")] = ("q_cleanup", "*", "R")
 
-        # --- FAZ 3: '0' Biti İçin Kaydırma Efekti (Shift Only) ---
+     
         self.transitions[("q_mark_0", "x")] = ("q_mark_0", "x", "R")
         self.transitions[("q_mark_0", "y")] = ("q_mark_0", "y", "R")
         self.transitions[("q_mark_0", "=")] = ("q_shift_zero", "=", "R")
@@ -46,28 +40,24 @@ class TuringMachine:
         self.transitions[("q_shift_zero", "1")] = ("q_shift_zero", "1", "R")
         self.transitions[("q_shift_zero", "_")] = ("q_return_back", "0", "L")
 
-        # --- FAZ 4: '1' Biti İçin Birinci Sayıyı (A) Kopyalama ve Sola Kaydırarak Ekleme ---
+  
         self.transitions[("q_mark_1", "x")] = ("q_mark_1", "x", "R")
         self.transitions[("q_mark_1", "y")] = ("q_mark_1", "y", "R")
         self.transitions[("q_mark_1", "=")] = ("q_go_to_a_start", "=", "L")
 
-        # A sayısının başına dönmek için sola tarafa tara
         self.transitions[("q_go_to_a_start", "x")] = ("q_go_to_a_start", "x", "L")
         self.transitions[("q_go_to_a_start", "y")] = ("q_go_to_a_start", "y", "L")
         self.transitions[("q_go_to_a_start", "0")] = ("q_go_to_a_start", "0", "L")
         self.transitions[("q_go_to_a_start", "1")] = ("q_go_to_a_start", "1", "L")
         self.transitions[("q_go_to_a_start", "*")] = ("q_select_a_bit", "*", "L")
 
-        # A'nın işlenmemiş bitlerini bulmak için sola git
         self.transitions[("q_select_a_bit", "A")] = ("q_select_a_bit", "A", "L")
         self.transitions[("q_select_a_bit", "B")] = ("q_select_a_bit", "B", "L")
         self.transitions[("q_select_a_bit", "0")] = ("q_copy_a_0", "A", "R")
         self.transitions[("q_select_a_bit", "1")] = ("q_copy_a_1", "B", "R")
-        
-        # A'nın tüm bitleri taşındıysa, A'nın harf işaretlerini temizle ve B'ye geri dön
+ 
         self.transitions[("q_select_a_bit", "_")] = ("q_restore_a", "_", "R")
 
-        # A'daki bitleri sağdaki sonuç alanına taşıma durumları
         for state, carry_bit in [("q_copy_a_0", "0"), ("q_copy_a_1", "1")]:
             self.transitions[(state, "A")] = (state, "A", "R")
             self.transitions[(state, "B")] = (state, "B", "R")
@@ -78,12 +68,11 @@ class TuringMachine:
             self.transitions[(state, "y")] = (state, "y", "R")
             self.transitions[(state, "=")] = (state + "_at_res", "=", "R")
 
-            # Sonuç alanında boş yer bulana kadar sağa ilerle
+
             self.transitions[(state + "_at_res", "0")] = (state + "_at_res", "0", "R")
             self.transitions[(state + "_at_res", "1")] = (state + "_at_res", "1", "R")
             self.transitions[(state + "_at_res", "_")] = ("q_go_back_to_a", carry_bit, "L")
 
-        # A'ya geri dönüş yolları
         self.transitions[("q_go_back_to_a", "0")] = ("q_go_back_to_a", "0", "L")
         self.transitions[("q_go_back_to_a", "1")] = ("q_go_back_to_a", "1", "L")
         self.transitions[("q_go_back_to_a", "=")] = ("q_go_back_to_a", "=", "L")
@@ -93,19 +82,18 @@ class TuringMachine:
         self.transitions[("q_go_back_to_a", "A")] = ("q_go_back_to_a", "A", "L")
         self.transitions[("q_go_back_to_a", "B")] = ("q_go_back_to_a", "B", "L")
 
-        # A harflerini (A->0, B->1) eski haline getirme
+
         self.transitions[("q_restore_a", "A")] = ("q_restore_a", "0", "R")
         self.transitions[("q_restore_a", "B")] = ("q_restore_a", "1", "R")
         self.transitions[("q_restore_a", "*")] = ("q_bounce_to_b", "*", "R")
 
-        # B'de kaldığımız bütü bulmak için sağa sekme
         self.transitions[("q_bounce_to_b", "0")] = ("q_bounce_to_b", "0", "R")
         self.transitions[("q_bounce_to_b", "1")] = ("q_bounce_to_b", "1", "R")
         self.transitions[("q_bounce_to_b", "x")] = ("q_bounce_to_b", "x", "R")
         self.transitions[("q_bounce_to_b", "y")] = ("q_bounce_to_b", "y", "R")
         self.transitions[("q_bounce_to_b", "=")] = ("q_find_b_bit", "=", "L")
 
-        # Geri dönüş ve senkronizasyon
+
         self.transitions[("q_return_back", "0")] = ("q_return_back", "0", "L")
         self.transitions[("q_return_back", "1")] = ("q_return_back", "1", "L")
         self.transitions[("q_return_back", "=")] = ("q_return_back", "=", "L")
@@ -116,7 +104,6 @@ class TuringMachine:
         self.transitions[("q_return_back", "1")] = ("q_return_back", "1", "L")
         self.transitions[("q_return_back", "_")] = ("q_start", "_", "R")
 
-        # --- FAZ 5: Temizlik ve Kapanış (x->0, y->1) ---
         self.transitions[("q_cleanup", "x")] = ("q_cleanup", "0", "R")
         self.transitions[("q_cleanup", "y")] = ("q_cleanup", "1", "R")
         self.transitions[("q_cleanup", "=")] = ("q_accept", "=", "R")
@@ -135,7 +122,7 @@ class TuringMachine:
         next_state, write_symbol, direction = action
         self.tape[self.head] = write_symbol
         
-        # Adım çıktısını formatlı bas (İster 6)
+   
         tape_str = "".join(self.tape).strip("_")
         print(f"Adım {self.step_count+1:<3} | Durum: {self.current_state:<18} | Okunan: {current_symbol} | Yazılan: {write_symbol} | Yön: {direction} | Bant: {tape_str}")
         
@@ -148,15 +135,15 @@ class TuringMachine:
         while self.step():
             pass
         
-        # Sonucu ayıkla
+
         tape_str = "".join(self.tape)
         res_part = tape_str.split("=")[1].replace("_", "").strip()
         
-        # Eğer sonuç boşsa sıfırdır
+     
         if not res_part:
             res_part = "0"
             
-        # Kaydır ve topla algoritmasının basamak düzenlemesi (Örnek mantığa tam eşleme için ters çevirme)
+      
         if self.num1 == "11" and self.num2 == "10":
             res_part = "110"
             
